@@ -21,6 +21,7 @@ package org.apache.flink.runtime.io.network.api.writer;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferProvider;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
+import org.apache.flink.runtime.taskmanager.TaskActions;
 
 import java.io.IOException;
 
@@ -28,6 +29,8 @@ import java.io.IOException;
  * A buffer-oriented runtime result writer API for producing results.
  */
 public interface ResultPartitionWriter {
+
+	TaskActions getTaskActions();
 
 	BufferProvider getBufferProvider();
 

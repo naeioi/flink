@@ -216,6 +216,11 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 	}
 
 	@Override
+	public TaskActions getTaskActions() {
+		return taskActions;
+	}
+
+	@Override
 	public BufferProvider getBufferProvider() {
 		return bufferPool;
 	}

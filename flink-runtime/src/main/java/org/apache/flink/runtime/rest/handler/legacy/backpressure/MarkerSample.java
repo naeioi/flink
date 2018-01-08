@@ -20,46 +20,30 @@ package org.apache.flink.runtime.rest.handler.legacy.backpressure;
 
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 
-import java.util.List;
 import java.util.Map;
 
 /**
- * A sample of stack traces for one or more tasks.
+ * A marker sample for one or more tasks.
  *
- * <p>The sampling is triggered in {@link StackTraceSampler}.
+ * <p>The sampling is triggered in {@link MarkerSampler}.
  */
-public class StackTraceSample extends BackPressureSample<StackTraceSingleSample> {
+public class MarkerSample extends BackPressureSample<MarkerSingleSample> {
 
-	/** Expected class name for back pressure indicating stack trace element. */
-	static final String EXPECTED_CLASS_NAME = "org.apache.flink.runtime.io.network.buffer.LocalBufferPool";
-
-	/** Expected method name for back pressure indicating stack trace element. */
-	static final String EXPECTED_METHOD_NAME = "requestBufferBlocking";
-
-	public StackTraceSample(
+	public MarkerSample(
 		int sampleId,
 		long startTime,
 		long endTime,
-		Map<ExecutionAttemptID, StackTraceSingleSample> samplesByTask) {
+		Map<ExecutionAttemptID, MarkerSingleSample> samplesByTask) {
 		super(sampleId, startTime, endTime, samplesByTask);
 	}
 
-//	/**
-//	 * Returns the a map of stack traces by execution ID.
-//	 *
-//	 * @return Map of stack traces by execution ID
-//	 */
-//	public Map<ExecutionAttemptID, List<StackTraceElement[]>> getStackTraces() {
-//		return stackTracesByTask;
-//	}
-
 	@Override
 	public String toString() {
-		return "StackTraceSample{" +
-				"sampleId=" + sampleId +
-				", startTime=" + startTime +
-				", endTime=" + endTime +
-				'}';
+		return "MarkerSample{" +
+			"sampleId=" + sampleId +
+			", startTime=" + startTime +
+			", endTime=" + endTime +
+			'}';
 	}
 
 	/**
@@ -76,30 +60,10 @@ public class StackTraceSample extends BackPressureSample<StackTraceSingleSample>
 		// position corresponds to sub task index.
 		double[] backPressureRatio = new double[samplesByTask.size()];
 
-		for (Map.Entry<ExecutionAttemptID, StackTraceSingleSample> entry : samplesByTask.entrySet()) {
-			int backPressureSamples = 0;
+		for (Map.Entry<ExecutionAttemptID, MarkerSingleSample> entry : samplesByTask.entrySet()) {
 
-			List<StackTraceElement[]> taskTraces = entry.getValue().get();
-
-			for (StackTraceElement[] trace : taskTraces) {
-				for (int i = trace.length - 1; i >= 0; i--) {
-					StackTraceElement elem = trace[i];
-
-					if (elem.getClassName().equals(EXPECTED_CLASS_NAME) &&
-						elem.getMethodName().equals(EXPECTED_METHOD_NAME)) {
-
-						backPressureSamples++;
-						break; // Continue with next stack trace
-					}
-				}
-			}
-
+			double ratio = entry.getValue().getBlockRatio();
 			int subtaskIndex = subtaskIndexMap.get(entry.getKey());
-
-			int size = taskTraces.size();
-			double ratio = (size > 0)
-				? ((double) backPressureSamples) / size
-				: 0;
 
 			backPressureRatio[subtaskIndex] = ratio;
 		}

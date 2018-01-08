@@ -16,30 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.messages;
+package org.apache.flink.runtime.rest.handler.legacy.backpressure;
 
-import org.apache.flink.runtime.instance.InstanceID;
-import org.apache.flink.util.Preconditions;
+import java.util.List;
 
-import java.io.Serializable;
+/**
+ * A stack trace sample(s) corresponding to a single ExecutionAttemptID.
+ */
+public class StackTraceSingleSample extends BackPressureSingleSample {
 
-public class StackTrace implements Serializable {
+	private List<StackTraceElement[]> samples = null;
 
-	private static final long serialVersionUID = -899464298250067416L;
-
-	private final InstanceID instanceId;
-	private final String stackTrace;
-
-	public StackTrace(InstanceID instanceId, String stackTrace) {
-		this.instanceId = Preconditions.checkNotNull(instanceId);
-		this.stackTrace = Preconditions.checkNotNull(stackTrace);
+	public StackTraceSingleSample(List<StackTraceElement[]> samples) {
+		this.samples = samples;
 	}
 
-	public InstanceID getInstanceId() {
-		return instanceId;
-	}
-
-	public String getStackTrace() {
-		return stackTrace;
+	public List<StackTraceElement[]> get() {
+		return samples;
 	}
 }

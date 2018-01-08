@@ -19,7 +19,13 @@
 package org.apache.flink.runtime.webmonitor;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.IllegalConfigurationException;
 import org.apache.flink.configuration.WebOptions;
+import org.apache.flink.runtime.rest.handler.legacy.backpressure.BackPressureSampler;
+import org.apache.flink.runtime.rest.handler.legacy.backpressure.MarkerSampler;
+import org.apache.flink.runtime.rest.handler.legacy.backpressure.StackTraceSampler;
+
+import java.util.concurrent.Executor;
 
 /**
  * Configuration object for {@link WebMonitor}.
@@ -54,5 +60,24 @@ public class WebMonitorConfig {
 
 	public String getAllowOrigin() {
 		return config.getString(WebOptions.ACCESS_CONTROL_ALLOW_ORIGIN);
+	}
+
+	public BackPressureSampler createBackPressureSampler(Executor executor, long sampleTimeout) {
+		String sampler = config.getString(WebOptions.BACKPRESSURE_SAMPLER);
+		if (sampler.equals("stackTrace")) {
+			return new StackTraceSampler(executor, sampleTimeout);
+		}
+		else {
+			if (sampler.equals("marker")) {
+				return new MarkerSampler(executor, sampleTimeout);
+			}
+			else {
+				throw new IllegalConfigurationException(
+					"web.backpressure.sampler should be either '%s' or '%s'.",
+					"stackTrace", "marker"
+				);
+			}
+		}
+
 	}
 }

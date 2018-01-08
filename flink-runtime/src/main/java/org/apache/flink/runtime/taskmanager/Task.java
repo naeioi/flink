@@ -268,6 +268,8 @@ public class Task implements Runnable, TaskActions {
 	 */
 	private ClassLoader userCodeClassLoader;
 
+	private boolean bufferRequesting;
+
 	/**
 	 * <p><b>IMPORTANT:</b> This constructor may not start any work that would need to
 	 * be undone in the case of a failing task deployment.</p>
@@ -595,6 +597,8 @@ public class Task implements Runnable, TaskActions {
 			if (isCanceledOrFailed()) {
 				throw new CancelTaskException();
 			}
+
+			bufferRequesting = false;
 
 			// ----------------------------------------------------------------
 			// register the task with the network stack
@@ -1032,6 +1036,16 @@ public class Task implements Runnable, TaskActions {
 		cancelOrFailAndCancelInvokable(ExecutionState.FAILED, cause);
 	}
 
+	@Override
+	public void notifyBufferRequestStart() {
+		bufferRequesting = true;
+	}
+
+	@Override
+	public void notifyBufferRequestDone() {
+		bufferRequesting = false;
+	}
+
 	private void cancelOrFailAndCancelInvokable(ExecutionState targetState, Throwable cause) {
 		while (true) {
 			ExecutionState current = executionState;
@@ -1394,6 +1408,10 @@ public class Task implements Runnable, TaskActions {
 	// ------------------------------------------------------------------------
 	//  Utilities
 	// ------------------------------------------------------------------------
+
+	public boolean isRequestingBuffer() {
+		return bufferRequesting;
+	}
 
 	private void cancelInvokable() {
 		// in case of an exception during execution, we still call "cancel()" on the task

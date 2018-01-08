@@ -16,18 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.messages;
+package org.apache.flink.runtime.messages.backpressure;
 
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
+import org.apache.flink.runtime.rest.handler.legacy.backpressure.BackPressureSingleSample;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
-import java.util.List;
 
-/**
- * Response to the TriggerStackTraceSample message.
- */
-public class StackTraceSampleResponse implements Serializable {
+public abstract class BackPressureSampleResponse<T extends BackPressureSingleSample> implements Serializable {
 
 	private static final long serialVersionUID = -4786454630050578031L;
 
@@ -35,15 +32,15 @@ public class StackTraceSampleResponse implements Serializable {
 
 	private final ExecutionAttemptID executionAttemptID;
 
-	private final List<StackTraceElement[]> samples;
+	private final T sample;
 
-	public StackTraceSampleResponse(
-			int sampleId,
-			ExecutionAttemptID executionAttemptID,
-			List<StackTraceElement[]> samples) {
+	public BackPressureSampleResponse(
+		int sampleId,
+		ExecutionAttemptID executionAttemptID,
+		T sample) {
 		this.sampleId = sampleId;
 		this.executionAttemptID = Preconditions.checkNotNull(executionAttemptID);
-		this.samples = Preconditions.checkNotNull(samples);
+		this.sample = Preconditions.checkNotNull(sample);
 	}
 
 	public int getSampleId() {
@@ -54,7 +51,7 @@ public class StackTraceSampleResponse implements Serializable {
 		return executionAttemptID;
 	}
 
-	public List<StackTraceElement[]> getSamples() {
-		return samples;
+	public T getSample() {
+		return sample;
 	}
 }

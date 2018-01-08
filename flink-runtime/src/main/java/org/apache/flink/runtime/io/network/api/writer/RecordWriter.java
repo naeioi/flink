@@ -129,7 +129,9 @@ public class RecordWriter<T extends IOReadableWritable> {
 						break;
 					}
 				} else {
+					targetPartition.getTaskActions().notifyBufferRequestStart();
 					buffer = targetPartition.getBufferProvider().requestBufferBlocking();
+					targetPartition.getTaskActions().notifyBufferRequestDone();
 					result = serializer.setNextBuffer(buffer);
 				}
 			}

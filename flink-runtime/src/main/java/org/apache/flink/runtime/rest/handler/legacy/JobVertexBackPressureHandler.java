@@ -89,7 +89,7 @@ public class JobVertexBackPressureHandler extends AbstractJobVertexRequestHandle
 
 				// Check whether we need to refresh
 				if (refreshInterval <= System.currentTimeMillis() - stats.getEndTimestamp()) {
-					backPressureStatsTracker.triggerStackTraceSample(jobVertex);
+					backPressureStatsTracker.triggerSampling(jobVertex);
 					gen.writeStringField("status", "deprecated");
 				} else {
 					gen.writeStringField("status", "ok");
@@ -112,7 +112,7 @@ public class JobVertexBackPressureHandler extends AbstractJobVertexRequestHandle
 				}
 				gen.writeEndArray();
 			} else {
-				backPressureStatsTracker.triggerStackTraceSample(jobVertex);
+				backPressureStatsTracker.triggerSampling(jobVertex);
 				gen.writeStringField("status", "deprecated");
 			}
 

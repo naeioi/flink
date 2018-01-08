@@ -118,6 +118,14 @@ public class WebOptions {
 			.withDeprecatedKeys("jobmanager.web.checkpoints.history");
 
 	/**
+	 * The backpressure sampler.
+	 * Candidates are 'stackTrace' and 'marker'.
+	 */
+	public static final ConfigOption<String> BACKPRESSURE_SAMPLER =
+		key("web.backpressure.sampler")
+			.defaultValue("stackTrace");
+
+	/**
 	 * Time after which cached stats are cleaned up if not accessed.
 	 */
 	public static final ConfigOption<Integer> BACKPRESSURE_CLEANUP_INTERVAL =

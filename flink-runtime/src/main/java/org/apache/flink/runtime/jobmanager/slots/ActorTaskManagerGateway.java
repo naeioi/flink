@@ -32,9 +32,11 @@ import org.apache.flink.runtime.instance.ActorGateway;
 import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.Messages;
-import org.apache.flink.runtime.messages.StackTrace;
+import org.apache.flink.runtime.messages.backpressure.MarkerSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.StackTrace;
 import org.apache.flink.runtime.messages.StackTraceSampleMessages;
-import org.apache.flink.runtime.messages.StackTraceSampleResponse;
+import org.apache.flink.runtime.messages.MarkerSampleMessages;
+import org.apache.flink.runtime.messages.backpressure.StackTraceSampleResponse;
 import org.apache.flink.runtime.messages.TaskManagerMessages;
 import org.apache.flink.runtime.messages.TaskMessages;
 import org.apache.flink.runtime.messages.checkpoint.NotifyCheckpointComplete;
@@ -116,6 +118,30 @@ public class ActorTaskManagerGateway implements TaskManagerGateway {
 			.mapTo(ClassTag$.MODULE$.<StackTraceSampleResponse>apply(StackTraceSampleResponse.class));
 
 		return FutureUtils.toJava(stackTraceSampleResponseFuture);
+	}
+
+	@Override
+	public CompletableFuture<MarkerSampleResponse> requestMarkerSample(
+		ExecutionAttemptID executionAttemptID,
+		int sampleId,
+		int numSamples,
+		Time delayBetweenSamples,
+		Time timeout) {
+		Preconditions.checkNotNull(executionAttemptID);
+		Preconditions.checkArgument(numSamples > 0, "The number of samples must be greater than 0.");
+		Preconditions.checkNotNull(delayBetweenSamples);
+		Preconditions.checkNotNull(timeout);
+
+		scala.concurrent.Future<MarkerSampleResponse> markerSampleResponseFuture = actorGateway.ask(
+			new MarkerSampleMessages.TriggerMarkerSample(
+				sampleId,
+				executionAttemptID,
+				numSamples,
+				delayBetweenSamples),
+			new FiniteDuration(timeout.getSize(), timeout.getUnit()))
+			.mapTo(ClassTag$.MODULE$.<MarkerSampleResponse>apply(MarkerSampleResponse.class));
+
+		return FutureUtils.toJava(markerSampleResponseFuture);
 	}
 
 	@Override

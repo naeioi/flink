@@ -44,7 +44,8 @@ import org.apache.flink.runtime.jobmanager.scheduler.ScheduledUnit;
 import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.runtime.jobmanager.slots.TaskManagerGateway;
 import org.apache.flink.runtime.messages.Acknowledge;
-import org.apache.flink.runtime.messages.StackTraceSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.MarkerSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.StackTraceSampleResponse;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
@@ -804,6 +805,37 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 				numSamples,
 				delayBetweenSamples,
 				maxStrackTraceDepth,
+				timeout);
+		} else {
+			return FutureUtils.completedExceptionally(new Exception("The execution has no slot assigned."));
+		}
+	}
+
+	/**
+	 * Request a marker sample from the task of this execution.
+	 *
+	 * @param sampleId of the stack trace sample
+	 * @param numSamples the sample should contain
+	 * @param delayBetweenSamples to wait
+	 * @param timeout until the request times out
+	 * @return Future marker sample response
+	 */
+	public CompletableFuture<MarkerSampleResponse> requestMarkerSample(
+		int sampleId,
+		int numSamples,
+		Time delayBetweenSamples,
+		Time timeout) {
+
+		final LogicalSlot slot = assignedResource;
+
+		if (slot != null) {
+			final TaskManagerGateway taskManagerGateway = slot.getTaskManagerGateway();
+
+			return taskManagerGateway.requestMarkerSample(
+				attemptId,
+				sampleId,
+				numSamples,
+				delayBetweenSamples,
 				timeout);
 		} else {
 			return FutureUtils.completedExceptionally(new Exception("The execution has no slot assigned."));

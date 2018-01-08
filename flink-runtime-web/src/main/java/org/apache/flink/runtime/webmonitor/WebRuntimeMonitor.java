@@ -56,8 +56,8 @@ import org.apache.flink.runtime.rest.handler.legacy.SubtasksAllAccumulatorsHandl
 import org.apache.flink.runtime.rest.handler.legacy.SubtasksTimesHandler;
 import org.apache.flink.runtime.rest.handler.legacy.TaskManagerLogHandler;
 import org.apache.flink.runtime.rest.handler.legacy.TaskManagersHandler;
+import org.apache.flink.runtime.rest.handler.legacy.backpressure.BackPressureSampler;
 import org.apache.flink.runtime.rest.handler.legacy.backpressure.BackPressureStatsTracker;
-import org.apache.flink.runtime.rest.handler.legacy.backpressure.StackTraceSampleCoordinator;
 import org.apache.flink.runtime.rest.handler.legacy.checkpoints.CheckpointConfigHandler;
 import org.apache.flink.runtime.rest.handler.legacy.checkpoints.CheckpointStatsDetailsHandler;
 import org.apache.flink.runtime.rest.handler.legacy.checkpoints.CheckpointStatsDetailsSubtasksHandler;
@@ -141,7 +141,9 @@ public class WebRuntimeMonitor implements WebMonitor {
 
 	private final File uploadDir;
 
-	private final StackTraceSampleCoordinator stackTraceSamples;
+//	private final StackTraceSampler stackTraceSamples;
+
+	private final BackPressureSampler backPressureSampler;
 
 	private final BackPressureStatsTracker backPressureStatsTracker;
 
@@ -216,7 +218,10 @@ public class WebRuntimeMonitor implements WebMonitor {
 
 		// - Back pressure stats ----------------------------------------------
 
-		stackTraceSamples = new StackTraceSampleCoordinator(scheduledExecutor, 60000);
+		/* TODO: set maxTraceDepth */
+//		stackTraceSamples = new StackTraceSampler(scheduledExecutor, 60000)
+
+		backPressureSampler = cfg.createBackPressureSampler(scheduledExecutor, 60000);
 
 		// Back pressure stats tracker config
 		int cleanUpInterval = config.getInteger(WebOptions.BACKPRESSURE_CLEANUP_INTERVAL);
@@ -230,7 +235,7 @@ public class WebRuntimeMonitor implements WebMonitor {
 		Time delayBetweenSamples = Time.milliseconds(delay);
 
 		backPressureStatsTracker = new BackPressureStatsTracker(
-				stackTraceSamples, cleanUpInterval, numSamples, delayBetweenSamples);
+				backPressureSampler, cleanUpInterval, numSamples, delayBetweenSamples);
 
 		// --------------------------------------------------------------------
 
@@ -480,7 +485,7 @@ public class WebRuntimeMonitor implements WebMonitor {
 
 			netty.shutdown();
 
-			stackTraceSamples.shutDown();
+			backPressureSampler.shutDown();
 
 			backPressureStatsTracker.shutDown();
 

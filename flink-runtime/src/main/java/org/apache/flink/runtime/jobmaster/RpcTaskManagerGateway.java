@@ -28,8 +28,9 @@ import org.apache.flink.runtime.executiongraph.PartitionInfo;
 import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.jobmanager.slots.TaskManagerGateway;
 import org.apache.flink.runtime.messages.Acknowledge;
-import org.apache.flink.runtime.messages.StackTrace;
-import org.apache.flink.runtime.messages.StackTraceSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.MarkerSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.StackTrace;
+import org.apache.flink.runtime.messages.backpressure.StackTraceSampleResponse;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
 import org.apache.flink.util.Preconditions;
 
@@ -81,6 +82,16 @@ public class RpcTaskManagerGateway implements TaskManagerGateway {
 			int maxStackTraceDepth,
 			Time timeout) {
 
+		throw new UnsupportedOperationException("Operation is not yet supported.");
+	}
+
+	@Override
+	public CompletableFuture<MarkerSampleResponse> requestMarkerSample(
+		ExecutionAttemptID executionAttemptID,
+		int sampleId,
+		int numSamples,
+		Time delayBetweenSamples,
+		Time timeout) {
 		throw new UnsupportedOperationException("Operation is not yet supported.");
 	}
 

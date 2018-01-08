@@ -46,4 +46,19 @@ public interface TaskActions {
 	 * @param cause of the failure
 	 */
 	void failExternally(Throwable cause);
+
+	/**
+	 * Track the beginning of a buffer request.
+	 *
+	 * A call to *LocalBufferPool.requestBufferBlocking* may block the task thread in case the presence of backpressure.
+	 * Printing thread traces is an effective yet inefficient way to monitor backpressure.
+	 * Instead by simply labeled a state of requesting buffer can we check externally whether the thread
+	 * is being blocking by backpressure
+	 */
+	void notifyBufferRequestStart();
+
+	/**
+	 * Track the end of a buffer request
+	 */
+	void notifyBufferRequestDone();
 }

@@ -49,15 +49,15 @@ public class BackPressureStatsTrackerTest extends TestLogger {
 	/** Tests simple statistics with fake stack traces. */
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testTriggerStackTraceSample() throws Exception {
+	public void testTriggerBackPressureSample() throws Exception {
 		CompletableFuture<StackTraceSample> sampleFuture = new CompletableFuture<>();
 
-		StackTraceSampleCoordinator sampleCoordinator = Mockito.mock(StackTraceSampleCoordinator.class);
-		Mockito.when(sampleCoordinator.triggerStackTraceSample(
+		BackPressureSampler sampler = Mockito.mock(BackPressureSampler.class);
+		Mockito.doReturn(sampleFuture)
+			.when(sampler).triggerSampling(
 				Matchers.any(ExecutionVertex[].class),
 				Matchers.anyInt(),
-				Matchers.any(Time.class),
-				Matchers.anyInt())).thenReturn(sampleFuture);
+				Matchers.any(Time.class));
 
 		ExecutionGraph graph = Mockito.mock(ExecutionGraph.class);
 		Mockito.when(graph.getState()).thenReturn(JobStatus.RUNNING);
@@ -88,32 +88,30 @@ public class BackPressureStatsTrackerTest extends TestLogger {
 		Time delayBetweenSamples = Time.milliseconds(100L);
 
 		BackPressureStatsTracker tracker = new BackPressureStatsTracker(
-				sampleCoordinator, 9999, numSamples, delayBetweenSamples);
+				sampler, 9999, numSamples, delayBetweenSamples);
 
 		// Trigger
-		Assert.assertTrue("Failed to trigger", tracker.triggerStackTraceSample(jobVertex));
+		Assert.assertTrue("Failed to trigger", tracker.triggerSampling(jobVertex));
 
-		Mockito.verify(sampleCoordinator).triggerStackTraceSample(
+		Mockito.verify(sampler).triggerSampling(
 				Matchers.eq(taskVertices),
 				Matchers.eq(numSamples),
-				Matchers.eq(delayBetweenSamples),
-				Matchers.eq(BackPressureStatsTracker.MAX_STACK_TRACE_DEPTH));
+				Matchers.eq(delayBetweenSamples));
 
 		// Trigger again for pending request, should not fire
-		Assert.assertFalse("Unexpected trigger", tracker.triggerStackTraceSample(jobVertex));
+		Assert.assertFalse("Unexpected trigger", tracker.triggerSampling(jobVertex));
 
 		Assert.assertTrue(!tracker.getOperatorBackPressureStats(jobVertex).isPresent());
 
-		Mockito.verify(sampleCoordinator).triggerStackTraceSample(
+		Mockito.verify(sampler).triggerSampling(
 				Matchers.eq(taskVertices),
 				Matchers.eq(numSamples),
-				Matchers.eq(delayBetweenSamples),
-				Matchers.eq(BackPressureStatsTracker.MAX_STACK_TRACE_DEPTH));
+				Matchers.eq(delayBetweenSamples));
 
 		Assert.assertTrue(!tracker.getOperatorBackPressureStats(jobVertex).isPresent());
 
 		// Complete the future
-		Map<ExecutionAttemptID, List<StackTraceElement[]>> traces = new HashMap<>();
+		Map<ExecutionAttemptID, StackTraceSingleSample> traces = new HashMap<>();
 		for (ExecutionVertex vertex : taskVertices) {
 			List<StackTraceElement[]> taskTraces = new ArrayList<>();
 
@@ -122,7 +120,7 @@ public class BackPressureStatsTrackerTest extends TestLogger {
 				taskTraces.add(createStackTrace(i <= vertex.getParallelSubtaskIndex()));
 			}
 
-			traces.put(vertex.getCurrentExecutionAttempt().getAttemptId(), taskTraces);
+			traces.put(vertex.getCurrentExecutionAttempt().getAttemptId(), new StackTraceSingleSample(taskTraces));
 		}
 
 		int sampleId = 1231;
@@ -156,8 +154,8 @@ public class BackPressureStatsTrackerTest extends TestLogger {
 	private StackTraceElement[] createStackTrace(boolean isBackPressure) {
 		if (isBackPressure) {
 			return new StackTraceElement[] { new StackTraceElement(
-					BackPressureStatsTracker.EXPECTED_CLASS_NAME,
-					BackPressureStatsTracker.EXPECTED_METHOD_NAME,
+					StackTraceSample.EXPECTED_CLASS_NAME,
+					StackTraceSample.EXPECTED_METHOD_NAME,
 					"LocalBufferPool.java",
 					133) };
 		} else {

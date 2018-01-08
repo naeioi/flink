@@ -61,11 +61,14 @@ import org.apache.flink.runtime.messages.StackTraceSampleMessages.{SampleTaskSta
 import org.apache.flink.runtime.messages.TaskManagerMessages._
 import org.apache.flink.runtime.messages.TaskMessages._
 import org.apache.flink.runtime.messages.checkpoint.{AbstractCheckpointMessage, NotifyCheckpointComplete, TriggerCheckpoint}
-import org.apache.flink.runtime.messages.{Acknowledge, StackTraceSampleResponse}
+import org.apache.flink.runtime.messages.Acknowledge
+import org.apache.flink.runtime.messages.MarkerSampleMessages.{MarkerSampleMessages, SampleTaskMarker, TriggerMarkerSample}
+import org.apache.flink.runtime.messages.backpressure.{MarkerSampleResponse, StackTraceSampleResponse}
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup
 import org.apache.flink.runtime.metrics.util.MetricUtils
 import org.apache.flink.runtime.metrics.{MetricRegistryConfiguration, MetricRegistryImpl, MetricRegistry => FlinkMetricRegistry}
 import org.apache.flink.runtime.process.ProcessReaper
+import org.apache.flink.runtime.rest.handler.legacy.backpressure.MarkerSingleSample
 import org.apache.flink.runtime.security.{SecurityConfiguration, SecurityUtils}
 import org.apache.flink.runtime.taskexecutor.{TaskExecutor, TaskManagerConfiguration, TaskManagerServices, TaskManagerServicesConfiguration}
 import org.apache.flink.runtime.util._
@@ -281,6 +284,8 @@ class TaskManager(
 
     // task sampling messages
     case message: StackTraceSampleMessages => handleStackTraceSampleMessage(message)
+
+    case message: MarkerSampleMessages => handleMarkerSampleMessage(message)
 
     // ----- miscellaneous messages ----
 
@@ -810,6 +815,103 @@ class TaskManager(
         Option.empty
       }
     }
+  }
+
+  private def handleMarkerSampleMessage(message: MarkerSampleMessages): Unit = {
+    message match {
+
+      // Triggers the sampling of a task
+      case TriggerMarkerSample(
+      sampleId,
+      executionId,
+      numSamples,
+      delayBetweenSamples) =>
+
+        log.debug(s"Triggering stack trace sample $sampleId.")
+
+        val senderRef = sender()
+
+        self ! SampleTaskMarker(
+          sampleId,
+          executionId,
+          delayBetweenSamples,
+          numSamples,
+          0, 0,
+          senderRef)
+
+      // Repeatedly sent to self to sample a task
+      case SampleTaskMarker(
+      sampleId,
+      executionId,
+      delayBetweenSamples,
+      remainingNumSamples,
+      numSampled, numBlocked,
+      sender) =>
+
+        try {
+          if (remainingNumSamples >= 1) {
+            getMarker(executionId) match {
+              case Some(isBlocked) =>
+
+                val numSampled_ = numSampled + 1
+                val numBlocked_ = if(isBlocked) numBlocked + 1 else numBlocked
+
+                if (remainingNumSamples > 1) {
+                  // ---- Continue ----
+                  val msg = SampleTaskMarker(
+                    sampleId,
+                    executionId,
+                    delayBetweenSamples,
+                    remainingNumSamples - 1,
+                    numSampled_, numBlocked_,
+                    sender)
+
+                  context.system.scheduler.scheduleOnce(
+                    new FiniteDuration(delayBetweenSamples.getSize, delayBetweenSamples.getUnit),
+                    self,
+                    msg)(context.dispatcher)
+                } else {
+                  // ---- Done ----
+                  log.debug(s"Done with marker sample $sampleId.")
+
+                  sender ! new MarkerSampleResponse(
+                    sampleId, executionId,
+                    new MarkerSingleSample(numSampled_, numBlocked_))
+                }
+
+              case None =>
+                if (numSampled == 0) {
+                  throw new IllegalStateException(s"Cannot sample task $executionId. " +
+                    s"Either the task is not known to the task manager or it is not running.")
+                } else {
+                  // Task removed during sampling. Reply with partial result.
+                  sender ! new MarkerSampleResponse(
+                    sampleId, executionId,
+                    new MarkerSingleSample(numSampled, numBlocked))
+                }
+            }
+          } else {
+            throw new IllegalStateException("Non-positive number of remaining samples")
+          }
+        } catch {
+          case e: Exception =>
+            sender ! decorateMessage(Status.Failure(e))
+        }
+
+      case _ => unhandled(message)
+    }
+
+    def getMarker(executionId: ExecutionAttemptID): Option[Boolean] = {
+
+      val task = runningTasks.get(executionId)
+
+      if (task != null && task.getExecutionState == ExecutionState.RUNNING) {
+        Option(task.isRequestingBuffer())
+      } else {
+        Option.empty
+      }
+    }
+
   }
 
   private def handleRequestTaskManagerLog(

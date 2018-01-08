@@ -80,7 +80,7 @@ public class JobVertexBackPressureHandlerTest {
 		assertNotNull(status);
 		assertEquals("deprecated", status.textValue());
 
-		verify(statsTracker).triggerStackTraceSample(any(ExecutionJobVertex.class));
+		verify(statsTracker).triggerSampling(any(ExecutionJobVertex.class));
 	}
 
 	/** Tests the response when stats are available. */
@@ -142,7 +142,7 @@ public class JobVertexBackPressureHandlerTest {
 		}
 
 		// Verify not triggered
-		verify(statsTracker, never()).triggerStackTraceSample(any(ExecutionJobVertex.class));
+		verify(statsTracker, never()).triggerSampling(any(ExecutionJobVertex.class));
 	}
 
 	/** Tests that after the refresh interval another sample is triggered. */
@@ -205,6 +205,6 @@ public class JobVertexBackPressureHandlerTest {
 		}
 
 		// Verify triggered
-		verify(statsTracker).triggerStackTraceSample(any(ExecutionJobVertex.class));
+		verify(statsTracker).triggerSampling(any(ExecutionJobVertex.class));
 	}
 }

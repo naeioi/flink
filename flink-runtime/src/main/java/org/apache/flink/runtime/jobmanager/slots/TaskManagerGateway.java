@@ -28,8 +28,9 @@ import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.PartitionInfo;
 import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.messages.Acknowledge;
-import org.apache.flink.runtime.messages.StackTrace;
-import org.apache.flink.runtime.messages.StackTraceSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.MarkerSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.StackTrace;
+import org.apache.flink.runtime.messages.backpressure.StackTraceSampleResponse;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -86,6 +87,23 @@ public interface TaskManagerGateway {
 		final int numSamples,
 		final Time delayBetweenSamples,
 		final int maxStackTraceDepth,
+		final Time timeout);
+
+	/**
+	 * Request a marker sample from the given task.
+	 *
+	 * @param executionAttemptID identifying the task to sample
+	 * @param sampleId of the sample
+	 * @param numSamples to take from the given task
+	 * @param delayBetweenSamples to wait for
+	 * @param timeout of the request
+	 * @return Future of marker sample response
+	 */
+	CompletableFuture<MarkerSampleResponse> requestMarkerSample(
+		final ExecutionAttemptID executionAttemptID,
+		final int sampleId,
+		final int numSamples,
+		final Time delayBetweenSamples,
 		final Time timeout);
 
 	/**

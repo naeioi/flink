@@ -60,7 +60,7 @@ import static org.apache.flink.runtime.testingUtils.TestingJobManagerMessages.Wa
 /**
  * Simple stack trace sampling test.
  */
-public class StackTraceSampleCoordinatorITCase extends TestLogger {
+public class StackTraceSamplerITCase extends TestLogger {
 
 	private static ActorSystem testActorSystem;
 
@@ -149,17 +149,16 @@ public class StackTraceSampleCoordinatorITCase extends TestLogger {
 								ExecutionGraph executionGraph = (ExecutionGraph) executionGraphResponse.executionGraph();
 								ExecutionJobVertex vertex = executionGraph.getJobVertex(task.getID());
 
-								StackTraceSampleCoordinator coordinator = new StackTraceSampleCoordinator(
+								StackTraceSampler coordinator = new StackTraceSampler(
 										testActorSystem.dispatcher(), 60000);
 
-								CompletableFuture<StackTraceSample> sampleFuture = coordinator.triggerStackTraceSample(
+								CompletableFuture<? extends BackPressureSample> sampleFuture = coordinator.triggerSampling(
 									vertex.getTaskVertices(),
 									// Do this often so we have a good
 									// chance of removing the job during
 									// sampling.
 									21474700 * 100,
-									Time.milliseconds(10L),
-									0);
+									Time.milliseconds(10L));
 
 								// Wait before cancelling so that some samples
 								// are actually taken.

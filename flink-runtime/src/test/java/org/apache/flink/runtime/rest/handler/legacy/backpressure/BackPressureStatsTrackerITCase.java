@@ -173,7 +173,7 @@ public class BackPressureStatsTrackerITCase extends TestLogger {
 							ExecutionGraph executionGraph = (ExecutionGraph) executionGraphResponse.executionGraph();
 							ExecutionJobVertex vertex = executionGraph.getJobVertex(task.getID());
 
-							StackTraceSampleCoordinator coordinator = new StackTraceSampleCoordinator(
+							StackTraceSampler coordinator = new StackTraceSampler(
 									testActorSystem.dispatcher(), 60000);
 
 							// Verify back pressure (clean up interval can be ignored)
@@ -264,7 +264,7 @@ public class BackPressureStatsTrackerITCase extends TestLogger {
 							// 3) Trigger stats for archived job
 							//
 							statsTracker.invalidateOperatorStatsCache();
-							Assert.assertFalse("Unexpected trigger", statsTracker.triggerStackTraceSample(vertex));
+							Assert.assertFalse("Unexpected trigger", statsTracker.triggerSampling(vertex));
 
 						} catch (Exception e) {
 							e.printStackTrace();
@@ -291,7 +291,7 @@ public class BackPressureStatsTrackerITCase extends TestLogger {
 			ExecutionJobVertex vertex) throws InterruptedException {
 
 		statsTracker.invalidateOperatorStatsCache();
-		Assert.assertTrue("Failed to trigger", statsTracker.triggerStackTraceSample(vertex));
+		Assert.assertTrue("Failed to trigger", statsTracker.triggerSampling(vertex));
 
 		// Sleep minimum duration
 		Thread.sleep(20 * 10);

@@ -64,7 +64,7 @@ import org.apache.flink.runtime.leaderretrieval.StandaloneLeaderRetrievalService
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.RegistrationMessages;
 import org.apache.flink.runtime.messages.StackTraceSampleMessages.TriggerStackTraceSample;
-import org.apache.flink.runtime.messages.StackTraceSampleResponse;
+import org.apache.flink.runtime.messages.backpressure.StackTraceSampleResponse;
 import org.apache.flink.runtime.messages.TaskManagerMessages;
 import org.apache.flink.runtime.messages.TaskManagerMessages.FatalError;
 import org.apache.flink.runtime.messages.TaskMessages;
@@ -1361,7 +1361,7 @@ public class TaskManagerTest extends TestLogger {
 								assertEquals(19230, response.getSampleId());
 								assertEquals(tdd.getExecutionAttemptId(), response.getExecutionAttemptID());
 
-								List<StackTraceElement[]> traces = response.getSamples();
+								List<StackTraceElement[]> traces = response.getSample().get();
 
 								assertEquals("Number of samples", numSamples, traces.size());
 
@@ -1433,7 +1433,7 @@ public class TaskManagerTest extends TestLogger {
 							assertEquals(1337, response.getSampleId());
 							assertEquals(tdd.getExecutionAttemptId(), response.getExecutionAttemptID());
 
-							List<StackTraceElement[]> traces = response.getSamples();
+							List<StackTraceElement[]> traces = response.getSample().get();
 
 							assertEquals("Number of samples", numSamples, traces.size());
 
