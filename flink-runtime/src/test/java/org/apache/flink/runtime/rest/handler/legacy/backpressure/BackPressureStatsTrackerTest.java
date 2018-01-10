@@ -50,6 +50,7 @@ public class BackPressureStatsTrackerTest extends TestLogger {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testTriggerBackPressureSample() throws Exception {
+		// Use StackTrace sampling to verify logic of TriggerBackPressureSample
 		CompletableFuture<StackTraceSample> sampleFuture = new CompletableFuture<>();
 
 		BackPressureSampler sampler = Mockito.mock(BackPressureSampler.class);

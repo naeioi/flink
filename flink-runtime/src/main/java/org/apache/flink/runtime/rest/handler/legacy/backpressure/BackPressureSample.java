@@ -111,10 +111,6 @@ public abstract class BackPressureSample<T> {
 
 	public abstract String toString();
 
-	/* TODO: seems like to generate stats some information on Vertex is necessary
-	 * Investigate createStatsFromSample for detail
-	 * */
-
 	/**
 	 *
 	 * @param subtaskIndexMap Map from task ID to subtask index,
